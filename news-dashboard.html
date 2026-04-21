@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal — Your Topic Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0f11;
+    --surface: #16181c;
+    --surface2: #1e2026;
+    --border: #2a2d35;
+    --accent: #c8f07a;
+    --accent-dim: rgba(200,240,122,0.12);
+    --accent-text: #8ab84a;
+    --text: #e8e9ec;
+    --muted: #7a7e8a;
+    --danger: #e06060;
+    --tag-bg: #1e2026;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(14,15,17,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text); }
+  .header-meta {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Main layout */
+  main { max-width: 900px; margin: 0 auto; padding: 2rem; }
+
+  /* Config panel */
+  .config-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .config-title {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+  .api-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1rem;
+    align-items: center;
+  }
+  .api-row label {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 80px;
+  }
+  input[type="password"], input[type="text"] {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 7px 12px;
+    flex: 1;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus { border-color: var(--accent); }
+  .ai-swap-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-style: italic;
+  }
+  /* Keywords */
+  .keyword-section { margin-top: 1.25rem; }
+  .keyword-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .keyword-row input { flex: 1; }
+  .tags-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .tag {
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text);
+    transition: border-color 0.2s;
+  }
+  .tag:hover { border-color: var(--accent); }
+  .tag-remove {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+  .tag-remove:hover { color: var(--danger); }
+  /* Buttons */
+  button {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #0e0f11;
+  }
+  .btn-primary:hover { background: #d8ff8a; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+  .fetch-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .last-updated {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* Topic cards */
+  .topic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .topic-card:hover { border-color: #3a3d45; }
+  .topic-header {
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  .topic-keyword {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  .topic-count {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .topic-body { padding: 1.25rem; }
+  .summary-block {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.75;
+    margin-bottom: 1rem;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.4s, transform 0.4s;
+  }
+  .summary-block.visible { opacity: 1; transform: none; }
+  .summary-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .dot-pulse {
+    display: flex;
+    gap: 4px;
+  }
+  .dot-pulse span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.2s infinite;
+  }
+  .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes pulse {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.9); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+  /* Article list */
+  .article-list { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 0.5rem; }
+  .article-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    text-decoration: none;
+  }
+  .article-item:last-child { border-bottom: none; }
+  .article-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    margin-top: 8px;
+  }
+  .article-text { flex: 1; }
+  .article-title {
+    font-size: 13px;
+    color: var(--text);
+    text-decoration: none;
+    line-height: 1.4;
+    display: block;
+    transition: color 0.15s;
+  }
+  .article-title:hover { color: var(--accent); }
+  .article-meta {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+    font-family: 'DM Mono', monospace;
+  }
+  /* Empty/error states */
+  .state-msg {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.8;
+  }
+  .state-msg .icon { font-size: 2rem; margin-bottom: 0.75rem; opacity: 0.5; }
+  .error-badge {
+    background: rgba(224,96,96,0.1);
+    border: 1px solid rgba(224,96,96,0.3);
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #e06060;
+    margin-bottom: 1rem;
+  }
+  /* AI provider selector */
+  select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    padding: 7px 12px;
+    outline: none;
+    cursor: pointer;
+  }
+  select:focus { border-color: var(--accent); }
+  .save-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: 6px;
+    animation: blink 1s infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .provider-hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    display: none;
+  }
+  .provider-hint.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Signal<span>.</span></div>
+  <div class="header-meta" id="clock">--</div>
+</header>
+
+<main>
+  <!-- Config Panel -->
+  <div class="config-panel">
+    <div class="config-title">Configuration</div>
+
+    <div class="api-row">
+      <label>AI Provider</label>
+      <select id="providerSelect" onchange="onProviderChange()">
+        <option value="claude">Claude (Anthropic)</option>
+        <option value="groq">Groq (Free)</option>
+        <option value="openai">OpenAI</option>
+        <option value="gemini">Google Gemini</option>
+      </select>
+    </div>
+
+    <div class="api-row">
+      <label>API Key</label>
+      <input type="password" id="apiKey" placeholder="Enter your API key…" oninput="saveConfig()" />
+    </div>
+    <div id="providerHint" class="provider-hint">
+      Groq free tier: get a key at console.groq.com — no credit card needed.
+    </div>
+    <div class="ai-swap-note" id="modelNote">Model: claude-sonnet-4-20250514 · Swap provider anytime above without losing your topics.</div>
+
+    <div class="keyword-section">
+      <div class="config-title" style="margin-bottom:8px;">Tracked topics</div>
+      <div class="tags-wrap" id="tagContainer"></div>
+      <div class="keyword-row">
+        <input type="text" id="newKeyword" placeholder="Add topic, e.g. 2g ethanol…" onkeydown="if(event.key==='Enter') addKeyword()" />
+        <button class="btn-ghost" onclick="addKeyword()">+ Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fetch bar -->
+  <div class="fetch-bar">
+    <button class="btn-primary" onclick="fetchAll()" id="fetchBtn">Fetch & Summarize</button>
+    <div class="last-updated" id="lastUpdated">Not fetched yet</div>
+  </div>
+
+  <!-- Results area -->
+  <div id="results"></div>
+</main>
+
+<script>
+// ─── Config ─────────────────────────────────────────────────────────────────
+
+const PROVIDERS = {
+  claude: {
+    name: 'Claude',
+    model: 'claude-sonnet-4-20250514',
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    modelNote: 'Model: claude-sonnet-4-20250514',
+    hint: ''
+  },
+  groq: {
+    name: 'Groq',
+    model: 'llama3-70b-8192',
+    endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+    modelNote: 'Model: llama3-70b-8192 (Groq free tier)',
+    hint: 'Groq free tier: get a key at console.groq.com — no credit card needed.'
+  },
+  openai: {
+    name: 'OpenAI',
+    model: 'gpt-4o-mini',
+    endpoint: 'https://api.openai.com/v1/chat/completions',
+    modelNote: 'Model: gpt-4o-mini',
+    hint: ''
+  },
+  gemini: {
+    name: 'Gemini',
+    model: 'gemini-1.5-flash',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+    modelNote: 'Model: gemini-1.5-flash (free tier available)',
+    hint: 'Get a free key at aistudio.google.com/app/apikey'
+  }
+};
+
+// ─── State ───────────────────────────────────────────────────────────────────
+
+function loadState() {
+  return {
+    keywords: JSON.parse(localStorage.getItem('signal_keywords') || '["2g ethanol","bagasse"]'),
+    apiKey: localStorage.getItem('signal_apikey') || '',
+    provider: localStorage.getItem('signal_provider') || 'claude'
+  };
+}
+
+function saveConfig() {
+  localStorage.setItem('signal_apikey', document.getElementById('apiKey').value);
+  localStorage.setItem('signal_provider', document.getElementById('providerSelect').value);
+}
+
+function saveKeywords(kws) {
+  localStorage.setItem('signal_keywords', JSON.stringify(kws));
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+
+window.addEventListener('DOMContentLoaded', () => {
+  const state = loadState();
+  document.getElementById('apiKey').value = state.apiKey;
+  document.getElementById('providerSelect').value = state.provider;
+  renderTags(state.keywords);
+  onProviderChange();
+  updateClock();
+  setInterval(updateClock, 1000);
+});
+
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+function onProviderChange() {
+  const p = document.getElementById('providerSelect').value;
+  const cfg = PROVIDERS[p];
+  document.getElementById('modelNote').textContent = cfg.modelNote + ' · Swap provider anytime above without losing your topics.';
+  const hint = document.getElementById('providerHint');
+  hint.textContent = cfg.hint;
+  hint.className = 'provider-hint' + (cfg.hint ? ' show' : '');
+  saveConfig();
+}
+
+// ─── Keywords ────────────────────────────────────────────────────────────────
+
+function renderTags(kws) {
+  const wrap = document.getElementById('tagContainer');
+  wrap.innerHTML = '';
+  kws.forEach((kw, i) => {
+    const tag = document.createElement('div');
+    tag.className = 'tag';
+    tag.innerHTML = `<span>${kw}</span><span class="tag-remove" onclick="removeKeyword(${i})">×</span>`;
+    wrap.appendChild(tag);
+  });
+}
+
+function addKeyword() {
+  const input = document.getElementById('newKeyword');
+  const val = input.value.trim();
+  if (!val) return;
+  const state = loadState();
+  if (!state.keywords.includes(val)) {
+    state.keywords.push(val);
+    saveKeywords(state.keywords);
+    renderTags(state.keywords);
+  }
+  input.value = '';
+}
+
+function removeKeyword(i) {
+  const state = loadState();
+  state.keywords.splice(i, 1);
+  saveKeywords(state.keywords);
+  renderTags(state.keywords);
+}
+
+// ─── RSS Fetch ───────────────────────────────────────────────────────────────
+
+async function fetchRSS(keyword) {
+  const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(keyword)}&hl=en-IN&gl=IN&ceid=IN:en`;
+
+  // Multiple proxy fallbacks
+  const proxies = [
+    async (url) => {
+      const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+      const json = await res.json();
+      return json.contents;
+    },
+    async (url) => {
+      const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+      return await res.text();
+    },
+    async (url) => {
+      const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
+      return await res.text();
+    }
+  ];
+
+  let lastError;
+  for (const proxy of proxies) {
+    try {
+      const xml = await proxy(rssUrl);
+      if (!xml || xml.length < 100) throw new Error('Empty response');
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xml, 'application/xml');
+      const items = [...doc.querySelectorAll('item')].slice(0, 8);
+      if (!items.length) throw new Error('No items parsed');
+      return items.map(item => ({
+        title: item.querySelector('title')?.textContent?.replace(/<[^>]+>/g, '') || '',
+        link: item.querySelector('link')?.textContent || '',
+        source: item.querySelector('source')?.textContent || '',
+        pubDate: item.querySelector('pubDate')?.textContent || ''
+      }));
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw new Error(`All proxies failed: ${lastError?.message}`);
+}
+
+// ─── AI Summarize ─────────────────────────────────────────────────────────────
+
+async function summarize(keyword, articles) {
+  const state = loadState();
+  const apiKey = state.apiKey;
+  const provider = state.provider;
+  const cfg = PROVIDERS[provider];
+
+  if (!apiKey) return '[No API key set — enter your key in the configuration above.]';
+
+  const headlines = articles.map((a, i) => `${i+1}. ${a.title}`).join('\n');
+  const prompt = `You are a sharp news analyst. Given these recent headlines about "${keyword}", write a concise 3-4 sentence briefing that captures the key developments, trends, and what they mean. Be direct and informative. Do not use bullet points.\n\nHeadlines:\n${headlines}`;
+
+  try {
+    if (provider === 'claude') {
+      const res = await fetch(cfg.endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: cfg.model,
+          max_tokens: 300,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      if (data.error) return `[Error: ${data.error.message}]`;
+      return data.content?.[0]?.text || '[No response]';
+
+    } else if (provider === 'gemini') {
+      const res = await fetch(`${cfg.endpoint}?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      });
+      const data = await res.json();
+      if (data.error) return `[Error: ${data.error.message}]`;
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || '[No response]';
+
+    } else {
+      // OpenAI-compatible (Groq, OpenAI)
+      const res = await fetch(cfg.endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: cfg.model,
+          max_tokens: 300,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+      const data = await res.json();
+      if (data.error) return `[Error: ${data.error.message}]`;
+      return data.choices?.[0]?.message?.content || '[No response]';
+    }
+  } catch (e) {
+    return `[Request failed: ${e.message}]`;
+  }
+}
+
+// ─── Main fetch ──────────────────────────────────────────────────────────────
+
+async function fetchAll() {
+  const state = loadState();
+  const keywords = state.keywords;
+  if (!keywords.length) {
+    document.getElementById('results').innerHTML = `<div class="state-msg"><div class="icon">◎</div>Add at least one topic above to get started.</div>`;
+    return;
+  }
+
+  const btn = document.getElementById('fetchBtn');
+  btn.disabled = true;
+  btn.textContent = 'Fetching…';
+
+  const results = document.getElementById('results');
+  results.innerHTML = '';
+
+  for (const kw of keywords) {
+    const card = document.createElement('div');
+    card.className = 'topic-card';
+    card.innerHTML = `
+      <div class="topic-header">
+        <div class="topic-keyword">${kw}</div>
+        <div class="topic-count" id="count-${slugify(kw)}">Loading…</div>
+      </div>
+      <div class="topic-body" id="body-${slugify(kw)}">
+        <div class="summary-loading"><div class="dot-pulse"><span></span><span></span><span></span></div> Fetching news…</div>
+      </div>`;
+    results.appendChild(card);
+
+    // Fetch + summarize concurrently per keyword
+    (async () => {
+      const slug = slugify(kw);
+      try {
+        const articles = await fetchRSS(kw);
+        document.getElementById(`count-${slug}`).textContent = `${articles.length} articles`;
+
+        const body = document.getElementById(`body-${slug}`);
+        body.innerHTML = `<div class="summary-loading"><div class="dot-pulse"><span></span><span></span><span></span></div> Summarizing with AI…</div>`;
+
+        const summary = await summarize(kw, articles);
+
+        const articleHTML = articles.map(a => `
+          <div class="article-item">
+            <div class="article-dot"></div>
+            <div class="article-text">
+              <a class="article-title" href="${a.link}" target="_blank">${a.title}</a>
+              <div class="article-meta">${a.source}${a.pubDate ? ' · ' + formatDate(a.pubDate) : ''}</div>
+            </div>
+          </div>`).join('');
+
+        body.innerHTML = `
+          <div class="summary-block" id="sumtext-${slug}">${summary}</div>
+          <div class="article-list">${articleHTML}</div>`;
+
+        setTimeout(() => {
+          const el = document.getElementById(`sumtext-${slug}`);
+          if (el) el.classList.add('visible');
+        }, 50);
+
+      } catch (e) {
+        const body = document.getElementById(`body-${slug}`);
+        body.innerHTML = `<div class="error-badge">Failed to load: ${e.message}</div>`;
+        document.getElementById(`count-${slug}`).textContent = 'Error';
+      }
+    })();
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Fetch & Summarize';
+  document.getElementById('lastUpdated').innerHTML =
+    `<span class="save-dot"></span>Updated ${new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '-');
+}
+
+function formatDate(str) {
+  try {
+    return new Date(str).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  } catch { return ''; }
+}
+</script>
+</body>
+</html>
